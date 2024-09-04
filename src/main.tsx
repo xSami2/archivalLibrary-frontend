@@ -15,15 +15,15 @@ import {
 
 // Routes
 import Root from "../src/routes/route";
-// @ts-ignore
 import ErrorPage from "../src/routes/error-page";
-// @ts-ignore
 import RegisterPage from "../src/routes/register";
+import FilesPage from "../src/routes/files";
+
 
 
 const router = createBrowserRouter([
     {
-        path: "/login",
+        path: "/",
         element: <App/>,
         errorElement: <ErrorPage/>,
     },
@@ -31,7 +31,11 @@ const router = createBrowserRouter([
         path: "/register",
         element: <RegisterPage/>,
         errorElement: <ErrorPage/>,
-
+    },
+    {
+        path: "/documents",
+        element: <FilesPage/>,
+        errorElement: <ErrorPage/>,
     },
 ]);
 
