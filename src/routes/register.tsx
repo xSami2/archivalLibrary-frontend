@@ -1,33 +1,29 @@
-import {useState} from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import {Button} from "primereact/button";
+import {Card} from "primereact/card";
 import {InputText} from "primereact/inputtext";
-import {InputOtp} from 'primereact/inputotp';
-import {Password} from 'primereact/password';
-import {Outlet, Link, useNavigate} from "react-router-dom";
+import {Password} from "primereact/password";
+import {Button} from "primereact/button";
+import {useState} from "react";
+import axios, {AxiosResponse} from 'axios';
+import {ToastContainer, toast} from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import {useNavigate} from 'react-router-dom';
 
 
-import {Card} from 'primereact/card';
-import {toast, ToastContainer} from "react-toastify";
-import axios from "axios";
-
-function App() {
+export default function RegisterPage() {
     const [user, setUser] = useState({
         username: "",
         password: "",
     });
-
     const navigate = useNavigate();
 
 
-    async function loginUser(event: any) {
+    async function registerUser(event: any) {
         event.preventDefault();
         try {
-            const responses = await axios.post("http://localhost:9091/api/v1/auth/authenticate", user)
+            const responses = await axios.post("http://localhost:9091/api/v1/auth/register", user)
             const token = responses.data.token
             sessionStorage.setItem("token", JSON.stringify(token))
-            toast.success('Login  successfully!', {
+            toast.success('Account created successfully!', {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -44,7 +40,7 @@ function App() {
 
 
         } catch (error) {
-            toast.error('User Credentials Wrong', {
+            toast.error('User Already exists', {
                 position: "top-right",
                 autoClose: 5000,
                 hideProgressBar: false,
@@ -60,12 +56,11 @@ function App() {
     }
 
     return (
-
         <div className="flex items-center justify-center min-h-screen w-full">
 
-            <Card title="Login">
+            <Card title="Register">
 
-                <form onSubmit={loginUser} className="flex flex-col gap-2">
+                <form onSubmit={registerUser} className="flex flex-col gap-2">
                     <label htmlFor="username">Username</label>
                     <InputText required value={user.username}
                                onChange={(e) => setUser({...user, username: e.target.value})}
@@ -78,10 +73,7 @@ function App() {
                         password: e.target.value
                     })} toggleMask feedback={false}/>
 
-                    <Button className="mt-4 w-full" type="submit" label="Login"/>
-
-
-                        <p> Don't have An account? <Link to="/register" className="text-blue-600"> Register</Link></p>
+                    <Button className="mt-4 w-full" type="submit" label="Register"/>
 
 
                 </form>
@@ -105,8 +97,5 @@ function App() {
             <ToastContainer/>
         </div>
 
-
     );
 }
-
-export default App;
