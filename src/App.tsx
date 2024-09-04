@@ -39,7 +39,7 @@ function App() {
             });
 
             setTimeout(() => {
-                navigate('/login');
+                navigate('/documents');
             }, 3000)
 
 

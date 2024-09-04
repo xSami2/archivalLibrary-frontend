@@ -13,25 +13,26 @@ import {InputIcon} from 'primereact/inputicon';
 import {Dialog} from 'primereact/dialog';
 import {InputText} from 'primereact/inputtext';
 import {Calendar} from 'primereact/calendar';
+import axios from "axios";
 
 
 export default function ProductsDemo() {
-    let document = {
+
+    const [date, setDate] = useState(null);
+
+    const [document, setDocument] = useState({
         id: null,
         title: "",
         author: "",
         dataOfPublication: "",
         description: "",
-    };
-
-    const [date, setDate] = useState(null);
-    const fileUploadReference = useRef(null);
-
-    const [products, setProducts] = useState(null);
+        file: null,
+    });
+    const [documents, setDocuments] = useState(null);
     const [productDialog, setProductDialog] = useState(false);
     const [deleteProductDialog, setDeleteProductDialog] = useState(false);
     const [deleteProductsDialog, setDeleteProductsDialog] = useState(false);
-    const [product, setProduct] = useState(document);
+    const [newDocument, setNewDocument] = useState(document);
     const [selectedProducts, setSelectedProducts] = useState(null);
     const [submitted, setSubmitted] = useState(false);
     const [globalFilter, setGlobalFilter] = useState(null);
@@ -39,17 +40,24 @@ export default function ProductsDemo() {
     const dt = useRef(null);
 
     useEffect(() => {
-        ProductService.getProducts().then((data) => setProducts(data));
+        ProductService.getProducts().then((data) => setDocuments(data));
     }, []);
 
 
-    const onSelect = (e) => {
+    const onSelectFileUpload = (e) => {
         // e.files contains the list of selected files
-        console.log('Selected files:', e.files);
+        console.log(e.files[0].objectURL)
+        setNewDocument((prevDocument) => ({
+            ...prevDocument,
+            file: e.files[0].objectURL
+        }))
+
+        setNewDocument(document)
+        // setS  e.files[0].objectURL;
     };
 
     const openNew = () => {
-        setProduct(document);
+        setNewDocument(document);
         setSubmitted(false);
         setProductDialog(true);
     };
@@ -67,18 +75,17 @@ export default function ProductsDemo() {
         setDeleteProductsDialog(false);
     };
 
-    const saveProduct = () => {
+    const saveDocuments = async () => {
         setSubmitted(true);
-        console.log(product);
-        console.log(fileUploadReference)
-        if (product.title.trim()) {
-            let _products = [...products];
-            let _product = {...product};
+        console.log(newDocument);
+        if (newDocument.title.trim()) {
+            let _documents = [...documents];
+            let _document = {...newDocument};
 
-            if (product.id) {
-                const index = findIndexById(product.id);
+            if (newDocument.id) {
+                const index = findIndexById(newDocument.id);
 
-                _products[index] = _product;
+                _documents[index] = _document;
                 toast.current.show({
                     severity: 'success',
                     summary: 'Successful',
@@ -86,8 +93,8 @@ export default function ProductsDemo() {
                     life: 3000,
                 });
             } else {
-                _product.id = createId();
-                _products.push(_product);
+                _document.id = createId();
+                _documents.push(_document);
                 toast.current.show({
                     severity: 'success',
                     summary: 'Successful',
@@ -96,28 +103,52 @@ export default function ProductsDemo() {
                 });
             }
 
-            setProducts(_products);
+            setDocuments(_documents);
             setProductDialog(false);
-            setProduct(document);
+            setNewDocument(document);
+
+            let jwt = sessionStorage.getItem('token');
+            jwt = jwt ? jwt.replace(/^"|"$/g, '') : '';
+
+            console.log("0ooooo")
+            console.log(newDocument)
+
+            const BOB = await fetch(newDocument.file);
+            const blob = await BOB.blob();
+            console.log(blob)
+
+            const formData = new FormData();
+            formData.append('file', blob); // Assuming 'fileInput' is an input element of type 'file'
+            formData.append('title', newDocument.title);
+            formData.append('author', newDocument.author);
+            formData.append('dataOfPublication', newDocument.dataOfPublication);
+            formData.append('description', newDocument.description);
+
+            const response = await axios.post('http://localhost:9091/theArchivalLibrary/v1/file', formData ,{
+                headers: {
+                    'Authorization': `Bearer ${jwt}` ,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
         }
     };
 
     const editProduct = (product) => {
-        setProduct({...product});
+        setNewDocument({...product});
         setProductDialog(true);
     };
 
     const confirmDeleteProduct = (product) => {
-        setProduct(product);
+        setNewDocument(product);
         setDeleteProductDialog(true);
     };
 
     const deleteProduct = () => {
-        let _products = products.filter((val) => val.id !== product.id);
+        let _products = documents.filter((val) => val.id !== newDocument.id);
 
-        setProducts(_products);
+        setDocuments(_products);
         setDeleteProductDialog(false);
-        setProduct(document);
+        setNewDocument(document);
         toast.current.show({
             severity: 'success',
             summary: 'Successful',
@@ -129,8 +160,8 @@ export default function ProductsDemo() {
     const findIndexById = (id) => {
         let index = -1;
 
-        for (let i = 0; i < products.length; i++) {
-            if (products[i].id === id) {
+        for (let i = 0; i < documents.length; i++) {
+            if (documents[i].id === id) {
                 index = i;
                 break;
             }
@@ -160,9 +191,9 @@ export default function ProductsDemo() {
     };
 
     const deleteSelectedProducts = () => {
-        let _products = products.filter((val) => !selectedProducts.includes(val));
+        let _products = documents.filter((val) => !selectedProducts.includes(val));
 
-        setProducts(_products);
+        setDocuments(_products);
         setDeleteProductsDialog(false);
         setSelectedProducts(null);
         toast.current.show({
@@ -174,21 +205,29 @@ export default function ProductsDemo() {
     };
 
     const onInputChange = (e, name) => {
-        const val = (e.target && e.target.value) || '';
-        let _product = {...product};
+        let updatedDocument = { ...newDocument };
 
-        _product[`${name}`] = val;
+        if (name === "file") {
+            console.log(e)
+            updatedDocument["file"] = e.files[0].objectURL;
+        } else if (name === "dataOfPublication") {
+            const dateValue = e.value;
+            const formattedDate = formatDate(dateValue);
+            updatedDocument["dataOfPublication"] = formattedDate;
+        } else {
+            const value = (e.target && e.target.value) || '';
+            updatedDocument[name] = value;
+        }
 
-        setProduct(_product);
+        setNewDocument(updatedDocument);
     };
 
-    const onInputNumberChange = (e, name) => {
-        const val = e.value || 0;
-        let _product = {...product};
-
-        _product[`${name}`] = val;
-
-        setProduct(_product);
+    const formatDate = (date) => {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = (d.getMonth() + 1).toString().padStart(2, '0');
+        const day = d.getDate().toString().padStart(2, '0');
+        return `${year}/${month}/${day}`;
     };
 
     const leftToolbarTemplate = () => {
@@ -268,7 +307,7 @@ export default function ProductsDemo() {
     const productDialogFooter = (
         <React.Fragment>
             <Button className={"mr-3"} label="Cancel" icon="pi pi-times" outlined onClick={hideDialog}/>
-            <Button label="Save" icon="pi pi-check" onClick={saveProduct}/>
+            <Button label="Save" icon="pi pi-check" onClick={saveDocuments}/>
         </React.Fragment>
     );
     const deleteProductDialogFooter = (
@@ -317,7 +356,7 @@ export default function ProductsDemo() {
 
                 <DataTable
                     ref={dt}
-                    value={products}
+                    value={documents}
                     selection={selectedProducts}
                     onSelectionChange={(e) => setSelectedProducts(e.value)}
                     dataKey="id"
@@ -379,13 +418,13 @@ export default function ProductsDemo() {
                     </label>
                     <InputText
                         id="name"
-                        value={product.title}
+                        value={newDocument.title}
                         onChange={(e) => onInputChange(e, 'title')}
                         required
                         autoFocus
-                        className={classNames({'p-invalid': submitted && !product.title})}
+                        className={classNames({'p-invalid': submitted && !newDocument.title})}
                     />
-                    {submitted && !product.title && (
+                    {submitted && !newDocument.title && (
                         <small className="p-error">Title is required.</small>
                     )}
                 </div>
@@ -396,13 +435,13 @@ export default function ProductsDemo() {
                     </label>
                     <InputText
                         id="name"
-                        value={product.author}
+                        value={newDocument.author}
                         onChange={(e) => onInputChange(e, 'author')}
                         required
                         autoFocus
-                        className={classNames({'p-invalid': submitted && !product.title})}
+                        className={classNames({'p-invalid': submitted && !newDocument.author})}
                     />
-                    {submitted && !product.title && (
+                    {submitted && !newDocument.author && (
                         <small className="p-error">Author is required.</small>
                     )}
                 </div>
@@ -411,11 +450,13 @@ export default function ProductsDemo() {
                     <label htmlFor="name" className="font-bold">
                         Data of Publication
                     </label>
-                    <Calendar value={date} onChange={(e) => setDate(e.value)} dateFormat="yy/mm/dd" showIcon={true}
+                    <Calendar value={date}
+                              onChange={(e) => onInputChange(e, 'dataOfPublication')} dateFormat="yy/mm/dd"
+                              showIcon={true}
                               required
 
-                              className={classNames({'p-invalid': submitted && !product.title})}/>
-                    {submitted && !product.title && (
+                              className={classNames({'p-invalid': submitted && !newDocument.dataOfPublication})}/>
+                    {submitted && !newDocument.dataOfPublication && (
                         <small className="p-error">Data Of Publication is required.</small>
                     )}
                 </div>
@@ -427,24 +468,29 @@ export default function ProductsDemo() {
                     </label>
                     <InputTextarea
                         id="description"
-                        value={product.description}
+                        value={newDocument.description}
                         onChange={(e) => onInputChange(e, 'description')}
                         rows={3}
                         cols={20}
                         required
                         autoFocus
-                        className={classNames({'p-invalid': submitted && !product.title})}
+                        className={classNames({'p-invalid': submitted && !newDocument.description})}
                     />
-                    {submitted && !product.title && (
+                    {submitted && !newDocument.description && (
                         <small className="p-error">Description is required.</small>
                     )}
 
                 </div>
 
                 <div className={"mt-2"}>
-                    <FileUpload chooseLabel={"Upload File"}  mode="basic"
-                                onSelect={onSelect}
-                                  accept="image/*" maxFileSize={1000000}/>
+                    <FileUpload chooseLabel={"Upload File"} mode="basic"
+                                onSelect={(e) => onInputChange(e, 'file')}
+                                className={classNames({'p-invalid': submitted && !newDocument.file})}
+                                 maxFileSize={1000000}/>
+                    {submitted && !newDocument.file && (
+                        <small className="p-error">File is required.</small>
+                    )}
+
                 </div>
 
 
@@ -464,9 +510,9 @@ export default function ProductsDemo() {
                         className="pi pi-exclamation-triangle mr-3"
                         style={{fontSize: '2rem'}}
                     />
-                    {product && (
+                    {newDocument && (
                         <span>
-              Are you sure you want to delete <b>{product.title}</b>?
+              Are you sure you want to delete <b>{newDocument.title}</b>?
             </span>
                     )}
                 </div>
@@ -486,7 +532,7 @@ export default function ProductsDemo() {
                         className="pi pi-exclamation-triangle mr-3"
                         style={{fontSize: '2rem'}}
                     />
-                    {product && (
+                    {newDocument && (
                         <span>Are you sure you want to delete the selected products?</span>
                     )}
                 </div>
