@@ -27,6 +27,7 @@ function App() {
             const responses = await axios.post("http://localhost:9091/api/v1/auth/authenticate", user)
             const token = responses.data.token
             sessionStorage.setItem("token", JSON.stringify(token))
+            localStorage.setItem("user", JSON.stringify(responses.data.userDTO))
             toast.success('Login  successfully!', {
                 position: "top-right",
                 autoClose: 3000,

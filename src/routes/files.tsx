@@ -19,9 +19,11 @@ import axios from "axios";
 export default function ProductsDemo() {
 
     const [date, setDate] = useState(null);
+    const [dialogTitle, setDialogTitle] = useState('');
+    const [allowUploadButton , setAllowUploadButton] = useState(false);
 
     const [document, setDocument] = useState({
-        id: null,
+        uuid: null,
         title: "",
         author: "",
         dataOfPublication: "",
@@ -44,19 +46,10 @@ export default function ProductsDemo() {
     }, []);
 
 
-    const onSelectFileUpload = (e) => {
-        // e.files contains the list of selected files
-        console.log(e.files[0].objectURL)
-        setNewDocument((prevDocument) => ({
-            ...prevDocument,
-            file: e.files[0].objectURL
-        }))
 
-        setNewDocument(document)
-        // setS  e.files[0].objectURL;
-    };
 
     const openNew = () => {
+        setDialogTitle("new Document")
         setNewDocument(document);
         setSubmitted(false);
         setProductDialog(true);
@@ -82,8 +75,8 @@ export default function ProductsDemo() {
             let _documents = [...documents];
             let _document = {...newDocument};
 
-            if (newDocument.id) {
-                const index = findIndexById(newDocument.id);
+            if (newDocument.uuid) {
+                const index = findIndexById(newDocument.uuid);
 
                 _documents[index] = _document;
                 toast.current.show({
@@ -93,7 +86,7 @@ export default function ProductsDemo() {
                     life: 3000,
                 });
             } else {
-                _document.id = createId();
+                _document.uuid = createId();
                 _documents.push(_document);
                 toast.current.show({
                     severity: 'success',
@@ -113,20 +106,25 @@ export default function ProductsDemo() {
             console.log("0ooooo")
             console.log(newDocument)
 
-            const BOB = await fetch(newDocument.file);
+            console.log(newDocument.file)
+            const BOB = await fetch(newDocument.file.objectURL);
             const blob = await BOB.blob();
-            console.log(blob)
+            const fileName = newDocument.file.name;  // Specify the file name you want
+            const file = new File([blob], fileName, { type: blob.type });
 
+            console.log(blob);
             const formData = new FormData();
-            formData.append('file', blob); // Assuming 'fileInput' is an input element of type 'file'
+            const user = JSON.parse(localStorage.getItem("user"))
+            formData.append( "file", file); // Assuming 'fileInput' is an input element of type 'file'
             formData.append('title', newDocument.title);
             formData.append('author', newDocument.author);
             formData.append('dataOfPublication', newDocument.dataOfPublication);
             formData.append('description', newDocument.description);
+            formData.append('userId',user.userId);
 
             const response = await axios.post('http://localhost:9091/theArchivalLibrary/v1/file', formData ,{
                 headers: {
-                    'Authorization': `Bearer ${jwt}` ,
+         //           'Authorization': `Bearer ${jwt}` ,
                     'Content-Type': 'multipart/form-data'
                 }
             });
@@ -134,6 +132,7 @@ export default function ProductsDemo() {
     };
 
     const editProduct = (product) => {
+        setDialogTitle("Edit Document")
         setNewDocument({...product});
         setProductDialog(true);
     };
@@ -144,7 +143,7 @@ export default function ProductsDemo() {
     };
 
     const deleteProduct = () => {
-        let _products = documents.filter((val) => val.id !== newDocument.id);
+        let _products = documents.filter((val) => val.id !== newDocument.uuid);
 
         setDocuments(_products);
         setDeleteProductDialog(false);
@@ -209,7 +208,7 @@ export default function ProductsDemo() {
 
         if (name === "file") {
             console.log(e)
-            updatedDocument["file"] = e.files[0].objectURL;
+            updatedDocument["file"] = e.files[0];
         } else if (name === "dataOfPublication") {
             const dateValue = e.value;
             const formattedDate = formatDate(dateValue);
@@ -359,7 +358,7 @@ export default function ProductsDemo() {
                     value={documents}
                     selection={selectedProducts}
                     onSelectionChange={(e) => setSelectedProducts(e.value)}
-                    dataKey="id"
+                    dataKey="uuid"
                     paginator
                     rows={10}
                     rowsPerPageOptions={[5, 10, 25]}
@@ -370,7 +369,7 @@ export default function ProductsDemo() {
                 >
                     <Column selectionMode="multiple" exportable={false}></Column>
                     <Column
-                        field="id"
+                        field="uuid"
                         header="ID"
                         sortable
                         style={{minWidth: '12rem'}}
@@ -405,7 +404,7 @@ export default function ProductsDemo() {
                 visible={productDialog}
                 style={{width: '32rem'}}
                 breakpoints={{'960px': '75vw', '641px': '90vw'}}
-                header="New Document"
+                header={dialogTitle}
                 modal
                 className="p-fluid"
                 footer={productDialogFooter}

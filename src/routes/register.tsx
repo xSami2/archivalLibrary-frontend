@@ -7,6 +7,7 @@ import axios, {AxiosResponse} from 'axios';
 import {ToastContainer, toast} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {useNavigate} from 'react-router-dom';
+import {AsyncLocalStorage} from "node:async_hooks";
 
 
 export default function RegisterPage() {
@@ -23,6 +24,7 @@ export default function RegisterPage() {
             const responses = await axios.post("http://localhost:9091/api/v1/auth/register", user)
             const token = responses.data.token
             sessionStorage.setItem("token", JSON.stringify(token))
+            localStorage.setItem("user", JSON.stringify(responses.data.userDTO))
             toast.success('Account created successfully!', {
                 position: "top-right",
                 autoClose: 3000,
