@@ -43,7 +43,7 @@ Now for Building the Image make sure you have docker installed in your Device
  cd archivalLibrary-frontend
 ```
 
-Install All Depdency 
+Install All Dependency 
 
 ```cmd
  npm i
