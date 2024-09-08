@@ -29,7 +29,7 @@ The application is divided into two main components:
 ## Installation
 
 
-```git
+```bash
 git clone https://github.com/xSami2/archivalLibrary-frontend.git
 
 git clone https://github.com/xSami2/archivalLibrary.git
