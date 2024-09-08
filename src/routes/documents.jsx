@@ -29,7 +29,7 @@ export default function ProductsDemo() {
         author: "",
         dataOfPublication: "",
         description: "",
-        file: null,
+        file: "",
     });
     const [documents, setDocuments] = useState([]);
     const [documentDialog, setDocumentDialog] = useState(false);
@@ -65,8 +65,8 @@ export default function ProductsDemo() {
 
     const saveDocuments = async () => {
         setSubmitted(true);
-        console.log(documents);
-        if (newDocument.title.trim()) {
+        const { title, author, dataOfPublication, description, file } = newDocument;
+        if (title.trim() && author.trim() && dataOfPublication.trim() && description.trim() && file) {
             let _documents = [...documents];
 
 
@@ -102,6 +102,8 @@ export default function ProductsDemo() {
                 });
                 setDocuments(_documents);
                 setDocumentDialog(false);
+                setNewDocument(tempDocument);
+
             } else {
                 toast.current.show({
                     severity: 'warn',
@@ -115,7 +117,6 @@ export default function ProductsDemo() {
         }
 
 
-        setNewDocument(tempDocument);
 
 
     };
